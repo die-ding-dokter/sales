@@ -40,17 +40,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Select workflow publishing
+      - name: Check publishing source
         continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.repos.updateInformationAboutPagesSite({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              build_type: 'workflow'
-            });
             const { data } = await github.rest.repos.getPages({ owner: context.repo.owner, repo: context.repo.repo });
             core.info(`Pages publishing source: ${data.build_type}`);
+            if (data.build_type !== 'workflow') {
+              core.warning('A repository administrator must select Settings > Pages > Source: GitHub Actions to prevent competing legacy source builds.');
+            }
       - uses: actions/deploy-pages@v4
         id: deployment
