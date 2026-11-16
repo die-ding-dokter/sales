@@ -2,6 +2,7 @@ import './style.css';
 import { Actor, Opportunity, OpportunityInput, totals, hasRole, csvCell, applyCommand, createOpportunity, Command } from '../shared/model';
 import { api, config, configured, graph, initAuth, login, logout, signedIn } from './auth';
 import { demoActor, sampleData } from './demo';
+import { collectPages } from '../shared/pagination';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const money = (c: number) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(c / 100);
@@ -144,16 +145,7 @@ function printQuote(o: Opportunity) {
 function reminderForm() { modal('Add a private Outlook reminder', `<form data-form="reminder"><p>This creates a reminder in your own calendar. No customer invitation will be sent.</p><label>Subject<input name="subject" maxlength="160" required/></label><label>Start (South Africa time)<input type="datetime-local" name="start" required/></label><label>Duration (minutes)<input name="duration" type="number" min="5" max="480" value="30" required/></label><button class="button">Create private reminder</button></form>`); }
 async function loadLive() {
   const session = await api('/session');
-  const all: Opportunity[] = [];
-  let cursor: string | null = null;
-  const seen = new Set<string>();
-  do {
-    const response = await api('/opportunities' + (cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''));
-    all.push(...response.items);
-    cursor = response.nextCursor;
-    if (cursor && seen.has(cursor)) throw new Error('The record list could not be loaded completely. Refresh the workspace.');
-    if (cursor) seen.add(cursor);
-  } while (cursor);
+  const all = await collectPages<Opportunity>(cursor => api('/opportunities' + (cursor ? `?cursor=${encodeURIComponent(cursor)}` : '')));
   actor = session.actor; settings = session.settings; records = all;
 }
 async function handleSubmit(e: Event) {
@@ -219,8 +211,8 @@ async function handleClick(e: Event) {
     } else if (action === 'audit' && o) {
       const el = document.querySelector('#audit-list')!;
       if (demo) { el.innerHTML = '<p>Sample mode demonstrates the workflow only. Production saves each change with its audit event in one database transaction.</p>'; return; }
-      const d = await api(`/opportunities/${o.id}/audit`);
-      el.innerHTML = `<ul>${d.items.map((v: { action: string; actorName: string; createdAt: string }) => `<li>${esc(v.action)} / ${esc(v.actorName)}<small>${date(v.createdAt)}</small></li>`).join('')}</ul>`;
+      const history = await collectPages<{ action: string; actorName: string; createdAt: string }>(cursor => api(`/opportunities/${o.id}/audit` + (cursor ? `?cursor=${encodeURIComponent(cursor)}` : '')));
+      el.innerHTML = `<ul>${history.map(v => `<li>${esc(v.action)} / ${esc(v.actorName)}<small>${date(v.createdAt)}</small></li>`).join('')}</ul>`;
     }
   });
 }

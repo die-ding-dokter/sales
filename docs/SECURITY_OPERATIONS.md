@@ -17,7 +17,7 @@ SalesRep queries are owner-filtered by the API. Cross-tenant and other-owner ite
 - One offer line is available in the UI. The API supports up to 30 lines; the UI refuses to overwrite a multi-line record with a single-line editor.
 - The team screen uses all-time operational totals. Monthly targets, finance revenue recognition, approved incentive calculations and customer consent tracking require a later release.
 - Cosmos continuous backup helps recovery; the deployment is single region and does not promise zero downtime or a contractual recovery time.
-- The audit display shows the latest page. Full retention and compliance exports require a separately governed records policy.
+- The audit display follows continuation cursors to show the complete retained history. Retention and compliance exports require a separately governed records policy.
 - The Functions host provides bounded concurrency and dynamic throttling. An application gateway/rate policy should be sized from real traffic before a wider rollout.
 
 ## Daily operations

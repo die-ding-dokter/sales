@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { generateKeyPair, exportJWK, SignJWT, createLocalJWKSet } from 'jose';
 import { TENANT_ID, Actor, createOpportunity, applyCommand, totals, csvCell, canSee } from '../shared/model.js';
 import { validateClaims, verifyAccessToken } from '../api/src/auth.js';
+import { collectPages } from '../shared/pagination.js';
 const rep: Actor = { oid: '11111111-1111-4111-8111-111111111111', tid: TENANT_ID, name: 'Rep', roles: ['SalesRep'] };
 const manager: Actor = { ...rep, oid: '22222222-2222-4222-8222-222222222222', name: 'Manager', roles: ['Manager'] };
 const finance: Actor = { ...manager, name: 'Finance', roles: ['Finance'] };
@@ -59,6 +60,20 @@ test('spreadsheet exports neutralise formula injection and preserve quotes', () 
   assert.equal(csvCell('=HYPERLINK("evil")'), '"\'=HYPERLINK(""evil"")"');
   assert.equal(csvCell('  +1'), '"\'  +1"'); assert.equal(csvCell('Normal, value'), '"Normal, value"');
   assert.equal(csvCell(-15), '"-15"');
+});
+test('all audit pages are retained, including an empty intermediate Cosmos page', async () => {
+  const requested: (string | null)[] = [];
+  const result = await collectPages<number>(async cursor => {
+    requested.push(cursor);
+    if (cursor === null) return { items: Array.from({ length: 100 }, (_, i) => i), nextCursor: 'page-2' };
+    if (cursor === 'page-2') return { items: [], nextCursor: 'page-3' };
+    return { items: [100, 101], nextCursor: null };
+  });
+  assert.equal(result.length, 102); assert.equal(result.at(-1), 101);
+  assert.deepEqual(requested, [null, 'page-2', 'page-3']);
+});
+test('a repeated cursor fails instead of presenting incomplete history as complete', async () => {
+  await assert.rejects(() => collectPages(async () => ({ items: [1], nextCursor: 'repeated' })), /completely/);
 });
 test('claims reject wrong tenant, client, scope and unassigned roles', () => {
   const p = { tid: TENANT_ID, ver: '2.0', oid: rep.oid, azp: 'spa', scp: 'access_as_user', roles: ['SalesRep'] };

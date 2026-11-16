@@ -25,6 +25,7 @@ Use assigned synthetic accounts; enter no customer data until these pass. These 
 | Same accounting reference on another opportunity | Transaction rejected |
 | Duplicate receipt reference / overpayment | Rejected |
 | Paginated query with more than 100 opportunities | UI loads all authorised pages |
+| More than 100 audit events, including an empty intermediate page | Complete retained history remains accessible |
 | Production redirect bridge | Work-account sign-in completes on the exact domain |
 | Outlook permission withheld | Feature shows failure; sales records stay intact |
 | Outlook draft created after review | Draft in the current user's mailbox; no send |

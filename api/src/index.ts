@@ -87,8 +87,10 @@ async function handler(req: HttpRequest, ctx: InvocationContext): Promise<HttpRe
     if (!match) throw new DomainError(404, 'Endpoint not found.');
     const existing = await read(match[1], actor);
     if (match[2] === 'audit' && req.method === 'GET') {
-      const result = await store().items.query({ query: 'SELECT c.action, c.actorName, c.createdAt, c.version FROM c WHERE c.tenantId = @tenant AND c.kind = @kind AND c.opportunityId = @id ORDER BY c.createdAt DESC', parameters: [{ name: '@tenant', value: actor.tid }, { name: '@kind', value: 'audit' }, { name: '@id', value: existing.id }] }, { partitionKey: actor.tid, maxItemCount: 100 }).fetchNext();
-      return json(200, { items: result.resources, hasMore: Boolean(result.continuationToken) });
+      const cursor = req.query.get('cursor') ?? undefined;
+      if (cursor && cursor.length > 16000) throw new DomainError(400, 'Invalid page cursor.');
+      const result = await store().items.query({ query: 'SELECT c.action, c.actorName, c.createdAt, c.version FROM c WHERE c.tenantId = @tenant AND c.kind = @kind AND c.opportunityId = @id ORDER BY c.createdAt DESC', parameters: [{ name: '@tenant', value: actor.tid }, { name: '@kind', value: 'audit' }, { name: '@id', value: existing.id }] }, { partitionKey: actor.tid, maxItemCount: 100, continuationToken: cursor }).fetchNext();
+      return json(200, { items: result.resources, nextCursor: result.continuationToken ?? null });
     }
     if (match[2] !== 'commands' || req.method !== 'POST') throw new DomainError(405, 'Method not allowed.');
     const input = z.object({ version: z.number().int().positive(), command: z.unknown() }).strict().parse(await body(req));
