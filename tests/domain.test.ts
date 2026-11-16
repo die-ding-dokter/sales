@@ -43,6 +43,12 @@ test('margin floors and immutable quotation history survive revisions', () => {
   o = applyCommand(o, rep, { action: 'edit', data: { ...data, lines: [{ ...data.lines[0], priceCents: 12000 }] } }, settings);
   assert.equal(o.revision, 2); assert.equal(o.quotes[0].netCents, 20000); assert.equal(totals(o.lines).netCents, 24000);
 });
+test('a lost opportunity cannot be reopened by quotation approval', () => {
+  let o = applyCommand(base(), rep, { action: 'submit' }, settings);
+  o = applyCommand(o, rep, { action: 'lose', reason: 'Customer cancelled' }, settings);
+  assert.throws(() => applyCommand(o, manager, { action: 'approve' }, settings), /open opportunity/);
+  assert.equal(o.stage, 'Lost');
+});
 test('validation rejects hidden fields, invalid dates, negatives and fractional cents', () => {
   assert.throws(() => createOpportunity({ ...data, ownerId: 'forged' }, rep, 'id'));
   assert.throws(() => createOpportunity({ ...data, dueDate: '2026-02-31' }, rep, 'id'));

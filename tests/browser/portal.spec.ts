@@ -42,7 +42,9 @@ for (const width of [320, 768, 1440]) test(`layout and navigation at ${width}px 
   await page.getByRole('button', { name: 'Open sample workspace' }).click();
   for (const theme of ['light', 'dark']) {
     await page.evaluate(t => { document.documentElement.dataset.theme = t; }, theme);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `test-results/precheck-${width}-${theme}.png`, fullPage: true });
+    const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, items: [...document.querySelectorAll('*')].filter(e => !e.closest('.table-scroll') && e.getBoundingClientRect().right > innerWidth + 1).map(e => ({ tag: e.tagName, cls: e.className, right: e.getBoundingClientRect().right })).slice(0, 10) }));
+    expect(overflow.scroll, JSON.stringify(overflow)).toBeLessThanOrEqual(overflow.width);
     await page.screenshot({ path: `test-results/overview-${width}-${theme}.png`, fullPage: true });
   }
   if (width < 900) await page.getByRole('button', { name: 'Open navigation' }).click();

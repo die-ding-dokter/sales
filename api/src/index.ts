@@ -44,7 +44,15 @@ function safeRecord(o: Opportunity & Partial<Resource> & { _attachments?: string
   return clean;
 }
 async function transaction(operations: OperationInput[], actor: Actor) {
-  const result = await store().items.batch(operations, actor.tid);
+  let result;
+  try { result = await store().items.batch(operations, actor.tid); }
+  catch (e) {
+    const cause = (e as { cause?: { code?: number } }).cause;
+    const code = cause?.code ?? (e as { code?: number }).code;
+    if (code === 409 || code === 412) throw new DomainError(409, 'The record or accounting reference changed. Refresh and check the original invoice before retrying.');
+    if (code === 429) throw new DomainError(429, 'The workspace is busy. Wait briefly, then refresh before retrying.');
+    throw e;
+  }
   if (result.code === 409 || result.code === 412 || result.result?.some(r => r.statusCode === 409 || r.statusCode === 412)) throw new DomainError(409, 'Another user changed this record. Refresh the workspace and try again.');
   if ((result.code ?? 500) >= 400 || result.result?.some(r => r.statusCode >= 400)) throw new DomainError(503, 'The change could not be saved. Refresh to check the record before retrying.');
 }

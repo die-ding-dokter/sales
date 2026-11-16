@@ -71,7 +71,7 @@ export function applyCommand(o: Opportunity, actor: Actor, input: unknown, setti
     next.quoteStatus = 'Draft'; next.stage = 'Qualified'; next.revision += 1;
   } else if (cmd.action === 'approve') {
     if (!hasRole(actor, 'Manager', 'Admin')) throw new DomainError(403, 'Manager approval is required.');
-    if (o.quoteStatus !== 'Awaiting approval') throw new DomainError(409, 'Submit the quote for approval first.');
+    if (o.quoteStatus !== 'Awaiting approval' || o.stage !== 'Qualified') throw new DomainError(409, 'An open opportunity submitted for approval is required.');
     if (settings.taxRate === null) throw new DomainError(409, 'Finance must configure the tax treatment before quotes can be approved.');
     const t = totals(o.lines);
     if (t.margin < settings.marginFloor) throw new DomainError(409, 'Margin is below the approved floor. Revise the offer.');
