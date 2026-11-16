@@ -1,0 +1,43 @@
+name: Deploy Azure API
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: sales-api-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: vars.AZURE_CLIENT_ID != '' && vars.AZURE_FUNCTIONAPP_NAME != ''
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm ci --omit=dev
+      - run: node scripts/package-api.mjs
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy immutable package using Microsoft Entra and managed identity
+        env:
+          STORAGE: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+          APP: ${{ vars.AZURE_FUNCTIONAPP_NAME }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          SUBSCRIPTION: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          cd artifacts/api
+          zip -q -r ../api.zip .
+          cd ../..
+          az storage blob upload --auth-mode login --account-name "$STORAGE" --container-name deployments --file artifacts/api.zip --name "api-${GITHUB_SHA}.zip" --overwrite false --only-show-errors
+          PACKAGE_URL="https://${STORAGE}.blob.core.windows.net/deployments/api-${GITHUB_SHA}.zip"
+          az functionapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$APP" --settings "WEBSITE_RUN_FROM_PACKAGE=$PACKAGE_URL" --output none
+          az rest --method post --url "https://management.azure.com/subscriptions/${SUBSCRIPTION}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Web/sites/${APP}/syncfunctiontriggers?api-version=2023-12-01" --output none

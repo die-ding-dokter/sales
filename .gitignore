@@ -1,0 +1,10 @@
+node_modules/
+dist/
+api/dist/
+.env*
+!.env.example
+api/local.settings.json
+test-results/
+playwright-report/
+.azure/
+artifacts/

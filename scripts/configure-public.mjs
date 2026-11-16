@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+const config = JSON.parse(await fs.readFile('public/config.json', 'utf8'));
+config.clientId = process.env.PORTAL_CLIENT_ID || config.clientId;
+config.apiScope = process.env.PORTAL_API_SCOPE || config.apiScope;
+config.apiBaseUrl = process.env.PORTAL_API_URL || config.apiBaseUrl;
+config.teamsChannelUrl = process.env.PORTAL_TEAMS_CHANNEL_URL || config.teamsChannelUrl;
+if (config.clientId && !/^[0-9a-f-]{36}$/i.test(config.clientId)) throw new Error('Invalid portal client ID');
+if (config.apiBaseUrl && !/^https:\/\/[^/]+\.azurewebsites\.net\/api\/?$/.test(config.apiBaseUrl)) throw new Error('Invalid API URL');
+if (config.apiScope && !/^api:\/\/[0-9a-f-]{36}\/access_as_user$/i.test(config.apiScope)) throw new Error('Invalid API scope');
+if (config.teamsChannelUrl && !/^https:\/\/teams\.microsoft\.com\/l\/channel\//.test(config.teamsChannelUrl)) throw new Error('Invalid Teams channel URL');
+await fs.writeFile('dist/config.json', JSON.stringify(config, null, 2) + '\n');
+await fs.copyFile('CNAME', 'dist/CNAME');
+await fs.writeFile('dist/.nojekyll', '');

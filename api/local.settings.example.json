@@ -1,0 +1,16 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "ENTRA_TENANT_ID": "fa446f15-b4e8-4968-b1c7-00296029852e",
+    "ENTRA_API_CLIENT_ID": "REPLACE_WITH_API_APP_CLIENT_ID",
+    "ENTRA_SPA_CLIENT_ID": "REPLACE_WITH_PORTAL_APP_CLIENT_ID",
+    "COSMOS_ENDPOINT": "https://REPLACE.documents.azure.com:443/",
+    "COSMOS_DATABASE": "sales",
+    "COSMOS_CONTAINER": "records",
+    "MARGIN_FLOOR": "0.15",
+    "SALES_TAX_RATE": "",
+    "ALLOWED_ORIGIN": "https://sales.diedingdokter.co.za"
+  }
+}
