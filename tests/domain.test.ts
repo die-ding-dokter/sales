@@ -58,6 +58,7 @@ test('validation rejects hidden fields, invalid dates, negatives and fractional 
 test('spreadsheet exports neutralise formula injection and preserve quotes', () => {
   assert.equal(csvCell('=HYPERLINK("evil")'), '"\'=HYPERLINK(""evil"")"');
   assert.equal(csvCell('  +1'), '"\'  +1"'); assert.equal(csvCell('Normal, value'), '"Normal, value"');
+  assert.equal(csvCell(-15), '"-15"');
 });
 test('claims reject wrong tenant, client, scope and unassigned roles', () => {
   const p = { tid: TENANT_ID, ver: '2.0', oid: rep.oid, azp: 'spa', scp: 'access_as_user', roles: ['SalesRep'] };

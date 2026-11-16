@@ -107,6 +107,6 @@ export function createOpportunity(input: unknown, actor: Actor, id: string, now 
 }
 export function csvCell(value: unknown) {
   let s = String(value ?? '');
-  if (/^[\s]*[=+\-@\t\r]/.test(s)) s = "'" + s;
+  if (typeof value !== 'number' && /^[\s]*[=+\-@\t\r]/.test(s)) s = "'" + s;
   return '"' + s.replaceAll('"', '""') + '"';
 }
